@@ -291,7 +291,7 @@ class Chatbot:
         # self.session = requests.Session()
         self.server = Server()
         self.session = self.server.session
-
+        self._session = requests.Session()
         if "email" in config and "password" in config:
             try:
                 cached_access_token = self.__get_cached_access_token(
@@ -320,6 +320,7 @@ class Chatbot:
             #     self.session = AsyncClient(proxies=proxies)  # type: ignore
             # else:
             self.session.proxies.update(proxies)
+            self._session.proxies.update(proxies)
 
         self.conversation_id = conversation_id or config.get("conversation_id")
         self.parent_id = parent_id or config.get("parent_id")
@@ -328,6 +329,7 @@ class Chatbot:
         self.parent_id_prev_queue = []
         self.lazy_loading = lazy_loading
         self.base_url = base_url or "https://chat.openai.com/backend-api/"
+        self.is_out_server = True if base_url else False
         self.disable_history = config.get("disable_history", False)
 
         self.__check_credentials()
@@ -349,6 +351,7 @@ class Chatbot:
             auth.access_token = self.config["access_token"]
             puid = auth.get_puid()
             self.session.headers.update({"PUID": puid})
+            self._session.headers.update({"PUID": puid})
             print("Setting PUID (You are a Plus user!): " + puid)
         except:
             pass
@@ -387,7 +390,16 @@ class Chatbot:
             access_token (str): access_token
         """
         self.session.headers.clear()
+        self._session.headers.clear()
         self.session.headers.update(
+            {
+                "Accept": "text/event-stream",
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
+            },
+        )
+        self._session.headers.update(
             {
                 "Accept": "text/event-stream",
                 "Authorization": f"Bearer {access_token}",
@@ -554,12 +566,19 @@ class Chatbot:
 
         self.conversation_id_prev_queue.append(cid)
         self.parent_id_prev_queue.append(pid)
-
-        response = self.server.request(
-            method="POST",
-            url=f"{self.base_url}conversation",
-            json=data,
-        )
+        if self.is_out_server:
+            response = self._session.post(
+                url=f"{self.base_url}conversation",
+                data=json.dumps(data),
+                timeout=timeout,
+                stream=True,
+            )
+        else:
+            response = self.server.request(
+                method="POST",
+                url=f"{self.base_url}conversation",
+                json=data,
+            )
         self.__check_response(response)
 
         finish_details = None

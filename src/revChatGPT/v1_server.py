@@ -8,7 +8,9 @@ class Server:
 
     def __init__(self):
         self.session = tls_client.Session(
-            client_identifier="firefox_110",
+            # client_identifier="chrome117",
+            client_identifier="chrome112",
+            random_tls_extension_order=True
         )
 
     def request(self, method: str, url: str, **kwargs) -> "Response":
