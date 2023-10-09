@@ -1,5 +1,5 @@
 import json
-import tls_client
+import requests
 from . import typings as t
 
 OPENAI_API_HOST = 'https://api.openai.com'
@@ -9,7 +9,7 @@ class Chatbot:
     """
     Chatbot class for ChatGPT
     """
-    session: tls_client.Session
+    session: requests.Session
 
     def __init__(
             self,
@@ -18,9 +18,8 @@ class Chatbot:
     ) -> None:
         self.models = []
         self.key = key
-        self.session = tls_client.Session(
-            client_identifier="firefox_110",
-        )
+        self.session = requests.Session()
+        self.session.timeout_seconds = 300
         if check:
             self.get_model()
 
@@ -71,7 +70,7 @@ class Chatbot:
             "model": model
         }
 
-        res = self.session.post(url, headers=self.headers, json=body, timeout_seconds=timeout)
+        res = self.session.post(url, headers=self.headers, json=body, timeout=timeout)
         self.check_response(res)
         message = ""
         if stream is False:
