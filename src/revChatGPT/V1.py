@@ -744,7 +744,12 @@ class Chatbot:
             "parent_message_id": parent_id,
             "model": model,
             "history_and_training_disabled": self.disable_history,
+            "plugin_ids": [],
+            "suggestions": [],
+            "arkose_token": "",
+            "force_paragen": False
         }
+
         plugin_ids = self.config.get("plugin_ids", []) or plugin_ids
         if len(plugin_ids) > 0 and not conversation_id:
             data["plugin_ids"] = plugin_ids
