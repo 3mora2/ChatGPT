@@ -1,4 +1,5 @@
 # Credits to github.com/rawandahmad698/PyChatGPT
+import json
 import re
 import os
 import urllib
@@ -61,6 +62,14 @@ class Auth0:
         """
         return urllib.parse.quote(string)
 
+    def json_text(self, var:dict, sp="&"):
+        li = []
+        for key, value in var.items():
+            li.append(
+                f"{key}={value}"
+            )
+        return f"{sp}".join(li)
+
     def begin(self) -> None:
         """
         In part two, We make a request to https://chat.openai.com/api/auth/csrf and grab a fresh csrf token
@@ -98,6 +107,12 @@ class Auth0:
         """
         url = "https://chat.openai.com/api/auth/signin/auth0?prompt=login"
         payload = f"callbackUrl=%2F&csrfToken={token}&json=true"
+        data = {
+            "callback_url": "/",
+            "csrfToken": token,
+            "json": "true",
+        }
+        payload = self.json_text(data)
         headers = {
             "Host": "chat.openai.com",
             "User-Agent": self.user_agent,
@@ -179,6 +194,7 @@ class Auth0:
             "Accept-Language": "en-US,en;q=0.9",
             "Referer": "https://chat.openai.com/",
         }
+
         response = self.session.get(url, headers=headers)
         if response.status_code == 200:
             self.__part_four(state=state)
@@ -200,10 +216,24 @@ class Auth0:
         email_url_encoded = self.url_encode(self.email_address)
 
         payload = (
-            f"state={state}&username={email_url_encoded}&js-available=false&webauthn-available=true&is"
-            f"-brave=false&webauthn-platform-available=true&action=default "
+            f"state={state}&"
+            f"username={email_url_encoded}&"
+            f"js-available=false"
+            f"&webauthn-available=true"
+            f"&is-brave=false&"
+            f"webauthn-platform-available=true&"
+            f"action=default"
         )
-
+        data = {
+            "action": "default",
+            "state": state,
+            "username": email_url_encoded,
+            "js_available": "true",
+            "webauthn_available": "true",
+            "is_brave": "false",
+            "webauthn_platform_available": "false",
+        }
+        payload = self.json_text(data)
         headers = {
             "Host": "auth0.openai.com",
             "Origin": "https://auth0.openai.com",
@@ -219,6 +249,7 @@ class Auth0:
             headers=headers,
             data=payload,
         )
+
         if response.status_code == 302 or response.status_code == 200:
             self.__part_five(state=state)
         else:
@@ -238,17 +269,28 @@ class Auth0:
 
         email_url_encoded = self.url_encode(self.email_address)
         password_url_encoded = self.url_encode(self.password)
-        payload = f"state={state}&username={email_url_encoded}&password={password_url_encoded}&action=default"
+        payload = (f"state={state}&"
+                   f"username={email_url_encoded}&"
+                   f"password={password_url_encoded}&"
+                   f"action=default")
+
+        data = {
+            "action": "default",
+            "state": state,
+            "username": email_url_encoded,
+            "password": password_url_encoded,
+        }
+        payload = self.json_text(data)
         url = f"https://auth0.openai.com/u/login/password?state={state}"
         headers = {
             "Host": "auth0.openai.com",
-            "Origin": "https://auth0.openai.com",
-            "Connection": "keep-alive",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            # "Origin": "https://auth0.openai.com",
+            # "Connection": "keep-alive",
+            # "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "User-Agent": self.user_agent,
-            "Referer": f"https://auth0.openai.com/u/login/password?state={state}",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Content-Type": "application/x-www-form-urlencoded",
+            "Referer": url,
+            # "Accept-Language": "en-US,en;q=0.9",
+            # "Content-Type": "application/x-www-form-urlencoded",
         }
         response = self.session.post(
             url,
@@ -256,6 +298,7 @@ class Auth0:
             allow_redirects=False,
             data=payload,
         )
+        print(response, response.text, response.headers.get("Location"), response.url)
         if response.status_code == 302:
             redirect_url = response.headers.get("Location")
             self.__part_six(old_state=state, redirect_url=redirect_url)

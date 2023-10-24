@@ -583,6 +583,7 @@ class Chatbot:
 
         finish_details = None
         lines = response.content.split(b"\n")
+        error = None
         for line in lines:
             # remove b' and ' at the beginning and end and ignore case
             line = str(line)[2:-1]
@@ -611,6 +612,13 @@ class Chatbot:
             except json.decoder.JSONDecodeError:
                 continue
             if not self.__check_fields(line):
+                if "error" in line:
+                    error = t.Error(
+                        source="OpenAI",
+                        message=line["error"],
+                        code=t.ErrorType.EXPIRED_ACCESS_TOKEN_ERROR,
+                    )
+
                 continue
             if line.get("message").get("author").get("role") != "assistant":
                 continue
@@ -628,11 +636,13 @@ class Chatbot:
                         and len(line["message"]["content"]["parts"]) > 0
                 ):
                     message_exists = True
+
             message: str = (
                 line["message"]["content"]["parts"][0] if message_exists else ""
             )
             model = metadata.get("model_slug", None)
             finish_details = metadata.get("finish_details", {"type": None})["type"]
+            error = None
             yield {
                 "author": author,
                 "message": message,
@@ -645,6 +655,8 @@ class Chatbot:
                 "citations": metadata.get("citations", []),
             }
 
+        if error:
+            raise error
         self.conversation_mapping[cid] = pid
         if pid is not None:
             self.parent_id = pid
@@ -906,7 +918,7 @@ class Chatbot:
         return True
 
     @logger(is_timed=False)
-    def __check_response(self, response: "Response") -> None:
+    def __check_response(self, response) -> None:
         """Make sure response is success
 
         Args:
@@ -1030,11 +1042,11 @@ class Chatbot:
         :param message_id: UUID of message
         """
         response = self.server.request("POST",
-            f"{self.base_url}conversation/gen_title/{convo_id}",
-            data=json.dumps(
-                {"message_id": message_id, "model": "text-davinci-002-render"},
-            ),
-        )
+                                       f"{self.base_url}conversation/gen_title/{convo_id}",
+                                       data=json.dumps(
+                                           {"message_id": message_id, "model": "text-davinci-002-render"},
+                                       ),
+                                       )
         self.__check_response(response)
         return response.json().get("title", "Error generating title")
 
