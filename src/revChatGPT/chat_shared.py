@@ -167,9 +167,12 @@ class Chatbot:
 
         loads = response.json()["loads"]
         loads.sort(key=lambda x: x['count'])
+        loads_ = list(filter(lambda x: x['count'] > 0, loads))
+        if not loads_:
+            loads_ = loads
         url_login = "https://chat-shared3.zhile.io/auth/login"
 
-        self.token_key = loads[0]["token_id"]
+        self.token_key = loads_[0]["token_id"]
         payload = f'token_key={self.token_key}&session_password={self.__password}'
         headers = {
             'authority': 'chat-shared3.zhile.io',
