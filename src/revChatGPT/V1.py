@@ -253,6 +253,7 @@ class Chatbot:
             base_url: str | None = None,
             captcha_solver: function = captcha_solver,
             captcha_download_images: bool = True,
+
     ) -> None:
         """Initialize a chatbot
 
@@ -750,6 +751,7 @@ class Chatbot:
                 parent_id = str(uuid.uuid4())
         model = model or self.config.get("model") or "text-davinci-002-render-sha"
         data = {
+
             "action": "next",
             "messages": messages,
             "conversation_id": conversation_id,
@@ -759,7 +761,10 @@ class Chatbot:
             "plugin_ids": [],
             "suggestions": [],
             "arkose_token": "",
-            "force_paragen": False
+            "force_paragen": False,
+            "conversation_mode": {
+                "kind": "primary_assistant"
+            }
         }
 
         plugin_ids = self.config.get("plugin_ids", []) or plugin_ids
@@ -812,6 +817,7 @@ class Chatbot:
                 "role": "user",
                 "author": {"role": "user"},
                 "content": {"content_type": "text", "parts": [prompt]},
+                "metadata": {}
             },
         ]
 

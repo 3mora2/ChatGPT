@@ -26,6 +26,19 @@ python -m pip install --upgrade revChatGPT
 - Minimum - Python3.9
 - Recommend - Python3.11+
 
+# chat-shared
+use https://chat-shared3.zhile.io
+
+```python
+from revChatGPT.chat_shared import Chatbot
+
+chat = Chatbot()
+message = chat.ask("Hello world")
+print(message)
+```
+
+
+
 # V2 ChatGPT
 use OPENAI_API_HOST = 'https://api.openai.com'
 
