@@ -40,6 +40,8 @@ setup(
         "tiktoken>=0.3.0",
         "openai",
         "rich",
+        "tls-client",
+        "typing_extensions",
     ],
     classifiers=[
         "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
