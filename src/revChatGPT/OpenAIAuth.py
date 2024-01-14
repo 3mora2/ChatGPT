@@ -75,6 +75,7 @@ class Auth0:
         In part two, We make a request to https://chat.openai.com/api/auth/csrf and grab a fresh csrf token
         """
         url = "https://chat.openai.com/api/auth/csrf"
+
         headers = {
             "Host": "chat.openai.com",
             "Accept": "*/*",

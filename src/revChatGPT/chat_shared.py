@@ -14,6 +14,7 @@ from typing import Callable as TFunction
 import requests
 from . import typings as t
 from .utils import get_input
+import itertools
 
 
 def generate_random_hex(length: int = 17) -> str:
@@ -143,6 +144,7 @@ class Chatbot:
         self.disable_history = config.get("disable_history", False)
 
         self.__check_credentials()
+        self.error_stop = 5
 
     @logger(is_timed=True)
     def __check_credentials(self) -> None:
@@ -154,7 +156,9 @@ class Chatbot:
             'DNT': '1',
             'sec-ch-ua-mobile': '?0',
             'User-Agent': User_Agent,
-            'sec-ch-ua-platform': '"Windows"'
+            'sec-ch-ua-platform': '"Windows"',
+            "credentials": "include",
+            "referrer": "https://chat-shared3.zhile.io/shared.html?v=2",
         }
         response = self.session.request("GET", url, headers=headers)
         if not response.ok:
@@ -165,14 +169,28 @@ class Chatbot:
             )
             raise error
 
-        loads = response.json()["loads"]
-        loads.sort(key=lambda x: x['count'])
-        loads_ = list(filter(lambda x: x['count'] > 0, loads))
-        if not loads_:
-            loads_ = loads
+        self.loads = itertools.chain(response.json()["loads"])
+        # loads.sort(key=lambda x: x['count'])
+        # loads_ = list(filter(lambda x: x['count'] > 0, loads))
+        # if not loads_:
+        self._create_session()
+
+    def _create_session(self):
         url_login = "https://chat-shared3.zhile.io/auth/login"
 
-        self.token_key = loads_[0]["token_id"]
+        self.token_key = next(self.loads, {})["token_id"]
+        if not self.token_key and self.error_stop <= 0:
+            error = t.Error(
+                source="_create_session",
+                message="Cant Login",
+                code=t.ErrorType.SERVER_ERROR,
+            )
+            raise error
+        elif not self.token_key:
+            print("- update loads list")
+            self.error_stop -= 1
+            self.__check_credentials()
+            return
         payload = f'token_key={self.token_key}&session_password={self.__password}'
         headers = {
             'authority': 'chat-shared3.zhile.io',
